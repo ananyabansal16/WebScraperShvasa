@@ -1,40 +1,53 @@
-import random
-import time
 import re
+import random
 from datetime import datetime
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from classifier import is_question
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver import Chrome
 
-user_agents = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:53.0) Gecko/20100101 Firefox/53.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.79 Safari/537.36",
-]
+
+# user_agents = [
+#     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
+#     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0",
+#     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+#     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:53.0) Gecko/20100101 Firefox/53.0",
+#     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.79 Safari/537.36",
+# ]
 
 def init_webdriver():
-    options = Options()
-    options.add_argument('--headless')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--no-sandbox')
-    options.add_argument(f"user-agent={random.choice(user_agents)}")
-    options.add_argument('--verbose')
+#     options = Options()
+#     # options.add_argument('--headless')
+#     options.add_argument('--disable-gpu')
+#     options.add_argument('--no-sandbox')
+#     options.add_argument(f"user-agent={random.choice(user_agents)}")
+#     options.add_argument('--verbose')
 
-    driver_path = '/usr/local/bin/chromedriver'
-    driver = webdriver.Chrome(service=Service(driver_path), options=options)
-    driver.set_page_load_timeout(30)
+#     # driver_path = '/usr/local/bin/chromedriver'
+#     # driver = webdriver.Chrome(service=Service(driver_path), options=options)
+#     service = Service(ChromeDriverManager().install())
+#     driver = webdriver.Chrome(service = service, options = options)
+#     driver.set_page_load_timeout(30)
+    options = webdriver.ChromeOptions()
+    # options.add_argument(f"user-agent={random.choice(user_agents)}")
+    options.add_argument("--headless")
+    options.page_load_strategy = "none"
+    driver = Chrome(options = options)
+    driver.implicitly_wait(5)
     return driver
 
 def get_questions_from_google(driver, website, keyword, num_questions=10):
     url = f"https://www.google.com/search?q=site:{website}.com+{keyword}"
+    
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless")
+    options.page_load_strategy = "none"
+    driver = Chrome(options = options)
+    driver.implicitly_wait(5)
+    
     questions = []
     counter = 0
     start = 0
@@ -43,8 +56,7 @@ def get_questions_from_google(driver, website, keyword, num_questions=10):
     while counter < num_questions and retries > 0:
         try:
             driver.get(url)
-            WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.expected-class')))
-            # time.sleep(random.uniform(3, 7))
+            WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.g')))
             response = driver.page_source
             retries = 3
         except Exception as e:
@@ -101,10 +113,11 @@ def get_questions_from_google(driver, website, keyword, num_questions=10):
 def test_scraper():
     driver = init_webdriver()
     website = "Quora"  # Replace with the website you want to scrape
-    keyword = "Pink"  # Replace with the keyword you want to search for
-    num_questions = 15
+    keyword = "Yoga"  # Replace with the keyword you want to search for
+    num_questions = 10
     questions = get_questions_from_google(driver, website, keyword, num_questions)  # Start from 0 questions extracted
     print(questions)
 
 if __name__ == "__main__":
     test_scraper()
+
