@@ -1,8 +1,10 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
+from dotenv import load_dotenv
 
 def init_google_sheets(credentials_json_path=None):
+    load_dotenv()
     if credentials_json_path is None:
         credentials_json_path = os.getenv('GOOGLE_SHEETS_CREDENTIALS_JSON')
     if not credentials_json_path:
@@ -24,7 +26,7 @@ def insert_questions_into_google_sheets(client, questions, keyword, website, spr
     rows = worksheet.get_all_values()
     next_row = len(rows) + 1 if rows else 2
 
-    header = ["Website", "Keyword", "Title", "Link", "Description", "Date Published", "Answer", "Is answered?"]
+    header = ["Website", "Keyword", "Title", "Link", "Description", "Date Published", "Answer", "Status"]
     if next_row == 2:
         worksheet.update('A1:H1', [header])
 
@@ -32,7 +34,7 @@ def insert_questions_into_google_sheets(client, questions, keyword, website, spr
     for question in questions:
         # answer = get_answer_from_openai(question["title"])
         date_published = question["date_published"].strftime('%Y-%m-%d') if question["date_published"] else ''
-        data.append([website, keyword, question["title"], question["link"], question["description"], date_published, '', 'False'])
+        data.append([website, keyword, question["title"], question["link"], question["description"], date_published, '', 'Unanswered'])
 
     range_start = f'A{next_row}'
     range_end = f'H{next_row + len(data) - 1}'

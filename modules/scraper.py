@@ -1,4 +1,5 @@
 import re
+import os
 import random
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -8,7 +9,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium import webdriver
 from classifier import is_question
 from selenium.webdriver import Chrome
-
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 # user_agents = [
 #     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
@@ -34,19 +36,30 @@ def init_webdriver():
     options = webdriver.ChromeOptions()
     # options.add_argument(f"user-agent={random.choice(user_agents)}")
     options.add_argument("--headless")
-    options.page_load_strategy = "none"
-    driver = Chrome(options = options)
+    options.page_load_strategy = "normal"
+    
+    chromedriver_path = ChromeDriverManager().install()
+    
+    executable_path = os.path.join(os.path.dirname(chromedriver_path), 'chromedriver')
+    if not os.path.isfile(executable_path):
+        raise ValueError(f"Expected 'chromedriver' executable, but got: {chromedriver_path}")
+    
+    os.chmod(executable_path, 0o755)
+    
+    service = Service(executable_path)
+    driver = webdriver.Chrome(service=service, options=options)
+    # driver = Chrome(options = options)
     driver.implicitly_wait(5)
     return driver
 
 def get_questions_from_google(driver, website, keyword, num_questions=10):
     url = f"https://www.google.com/search?q=site:{website}.com+{keyword}"
     
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless")
-    options.page_load_strategy = "none"
-    driver = Chrome(options = options)
-    driver.implicitly_wait(5)
+    # options = webdriver.ChromeOptions()
+    # options.add_argument("--headless")
+    # options.page_load_strategy = "none"
+    # driver = Chrome(options = options)
+    # driver.implicitly_wait(5)
     
     questions = []
     counter = 0
@@ -93,7 +106,7 @@ def get_questions_from_google(driver, website, keyword, num_questions=10):
                         except ValueError:
                             date_published = None
 
-            if is_question(title) and '...' not in title:
+            if is_question(title) and '...' not in title and 'r/' not in title:
                 questions.append({"title": title, "link": link, "description": description, "date_published": date_published})
                 counter += 1
 
@@ -120,4 +133,3 @@ def test_scraper():
 
 if __name__ == "__main__":
     test_scraper()
-
